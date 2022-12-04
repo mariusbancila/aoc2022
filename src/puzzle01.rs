@@ -1,13 +1,15 @@
-mod utils;
-
+use crate::utils;
 use std::path::Path;
 
-fn main() {
+pub fn execute() {
+   println!("=== puzzle 1 ===");
    let calories = find_maximum("./data/input01.txt");
    println!("{}", calories);
    
    let (c1, c2, c3) = find_maximums("./data/input01.txt");
    println!("{},{},{} => {}", c1,c2,c3, c1+c2+c3);
+   
+   println!();
 }
 
 fn find_maximum<P>(filename: P) -> i32

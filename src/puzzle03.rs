@@ -1,9 +1,10 @@
-mod utils;
-
+use crate::utils;
 use std::path::Path;
 use std::collections::HashSet;
 
-fn main() {
+pub fn execute() {
+   println!("=== puzzle 3 ===");
+   
    assert_eq!(1, get_priority('a'));
    assert_eq!(26, get_priority('z'));
    assert_eq!(27, get_priority('A'));
@@ -20,6 +21,8 @@ fn main() {
    
    let total2 = get_priorties_sum2("./data/input03.txt");
    println!("total2={}", total2);
+   
+   println!();
 }
 
 fn get_priority(item : char) -> i32 {

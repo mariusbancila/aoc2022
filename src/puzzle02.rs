@@ -1,13 +1,16 @@
-mod utils;
-
+use crate::utils;
 use std::path::Path;
 
-fn main() {
+pub fn execute() {
+   println!("=== puzzle 2 ===");
+   
    let total = compute_total("./data/input02.txt");
    println!("total={}", total);
    
    let total = compute_correct_total("./data/input02.txt");
    println!("correct total={}", total);
+   
+   println!();
 }
 
 fn compute_total<P>(filename: P) -> i32
