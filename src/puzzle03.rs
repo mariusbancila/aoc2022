@@ -69,7 +69,7 @@ where P: AsRef<Path>, {
       let mut count = 0;
       let mut set1 : HashSet::<char> = HashSet::<char>::new();
       let mut set2 : HashSet::<char> = HashSet::<char>::new();
-      let mut set3 : HashSet::<char> = HashSet::<char>::new();
+      let mut set3;
       
       for line in lines {
          if let Ok(ip) = line {
