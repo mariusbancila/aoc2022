@@ -18,33 +18,34 @@ impl fmt::Display for Point {
     }
 }
 
-fn run_simulation<P>(filename : P) -> PointSet
+fn run_simulation<P>(filename : P, length: usize) -> PointSet
 where P : AsRef<Path> {
     let mut points = PointSet::new();
-    let mut current_head = Point{x: 0, y: 0};
-    let mut current_tail = Point{x: 0, y: 0};
-    points.insert(current_tail);
+    let mut rope : Vec<Point> = Vec::new();
+    for _ in 0..length {
+        rope.push(Point{x: 0, y: 0})
+    }
+    points.insert(Point{x: 0, y: 0});
 
     if let Ok(lines) = utils::read_lines(filename) {
         for line in lines {
             if let Ok(cmd) = line {
                 let parts : Vec<&str> = cmd.split_ascii_whitespace().collect();
-                let dir = parts[0];
-                let step = parts[1].parse::<u32>().unwrap();
+                let dir = parts[0].chars().next().unwrap();
+                let step = parts[1].parse::<usize>().unwrap();
 
-                // println!("[{}|{}]", dir, step);
+                for _ in 1..=step {           
+                    rope[0] = move_head(&rope[0], dir);
 
-                for _ in 0..step {                    
-                    let (next_head, next_tail) = move_direction(&current_head, &current_tail, dir.chars().next().unwrap());
+                    for i in 1..length {
+                        let next_tail = move_tail(&rope[i-1], &rope[i], dir);
 
-                    // println!("  H:{},T:{} => H:{},T:{}", current_head, current_tail, next_head, next_tail);
-
-                    if !points.contains(&next_tail) {
-                        points.insert(next_tail.clone());
+                        rope[i] = next_tail;
                     }
 
-                    current_head = next_head;
-                    current_tail = next_tail;
+                    if !points.contains(&rope[length-1]) {
+                        points.insert(rope[length-1].clone());
+                    }
                 }
             }
         }
@@ -53,9 +54,8 @@ where P : AsRef<Path> {
     points
 }
 
-fn move_direction(head : &Point, tail : &Point, dir : char) -> (Point, Point) {
+fn move_head(head : &Point, dir : char) -> Point {
     let mut next_head = *head;
-    let mut next_tail = *tail;
 
     match dir {
         'U' => {
@@ -70,8 +70,14 @@ fn move_direction(head : &Point, tail : &Point, dir : char) -> (Point, Point) {
         'L' => {
             next_head.x -= 1;
         },
-        _ => panic!("Unexpected command!")
+        _ => panic!("Unexpected command '{}'!", dir)
     }
+
+    next_head
+}
+
+fn move_tail(next_head : &Point, tail : &Point, dir : char) -> Point {
+    let mut next_tail = *tail;
 
     if (next_head.x - next_tail.x).abs() > 1 ||
        (next_head.y - next_tail.y).abs() > 1 {
@@ -84,7 +90,15 @@ fn move_direction(head : &Point, tail : &Point, dir : char) -> (Point, Point) {
                 'L' => {
                     next_tail.x -= 1;
                 },
-                _ => panic!("Unexpected command!")
+                'U'|'D' => {
+                    if next_head.x < next_tail.x {
+                        next_tail.x -= 1;
+                    }
+                    else if next_head.x > next_tail.x {
+                        next_tail.x += 1;
+                    }
+                }                
+                _ => panic!("Unexpected command '{}'!", dir)
             }
         }
         // same column
@@ -96,77 +110,70 @@ fn move_direction(head : &Point, tail : &Point, dir : char) -> (Point, Point) {
                 'D' => {
                     next_tail.y += 1;
                 },
-                _ => panic!("Unexpected command!")
+                'L'|'R' => {
+                    if next_head.y < next_tail.y {
+                        next_tail.y -= 1;
+                    }
+                    else if next_head.y > next_tail.y {
+                        next_tail.y += 1;
+                    }
+                }
+                _ => panic!("Unexpected command '{}'!", dir)
             }
         }
         // diagonal 
         else {
-            // *H    *H
-            // ** => *T
-            // T*    **
-            if (next_head.x == next_tail.x + 1) && (next_head.y == next_tail.y - 2) {
+            // *HH    *HH
+            // **H => *TH
+            // T**    ***
+            if (next_head.x >= next_tail.x + 1) && (next_head.y <= next_tail.y -1 ) {
                 next_tail.x += 1;
                 next_tail.y -= 1;
             }
-            // H*    **
-            // ** => T*
-            // *T    **
-            else if (next_head.x == next_tail.x - 1) && (next_head.y == next_tail.y - 2) {
+            // HH*    HH*
+            // H** => HT*
+            // **T    ***
+            else if (next_head.x <= next_tail.x - 1) && (next_head.y <= next_tail.y - 1) {
                 next_tail.x -= 1;
                 next_tail.y -= 1;
             }
-            // *T    **
-            // ** => T*
-            // H*    H*
-            else if (next_head.x == next_tail.x - 1) && (next_head.y == next_tail.y + 2) {
+            // **T    ***
+            // H** => HT*
+            // HH*    HH*
+            else if (next_head.x <= next_tail.x - 1) && (next_head.y >= next_tail.y + 1) {
                 next_tail.x -= 1;
                 next_tail.y += 1;
             }
-            // T*    **
-            // ** => *T
-            // *H    *H
-            else if (next_head.x == next_tail.x + 1) && (next_head.y == next_tail.y + 2) {
-                next_tail.x += 1;
-                next_tail.y += 1;
-            }
-            // **H     *TH
-            // T**  => ***
-            else if (next_head.x == next_tail.x + 2) && (next_head.y == next_tail.y - 1) {
-                next_tail.x += 1;
-                next_tail.y -= 1;
-            }
-            // H**     HT*
-            // **T  => ***
-            else if (next_head.x == next_tail.x - 2) && (next_head.y == next_tail.y - 1) {
-                next_tail.x -= 1;
-                next_tail.y -= 1;
-            }
-            // **T     ***
-            // H**  => HT*
-            else if (next_head.x == next_tail.x - 2) && (next_head.y == next_tail.y + 1) {
-                next_tail.x -= 1;
-                next_tail.y += 1;
-            }
-            // T**     ***
-            // **H  => *TH
-            else if (next_head.x == next_tail.x + 2) && (next_head.y == next_tail.y + 1) {
+            // T**    ***
+            // **H => *TH
+            // *HH    *HH
+            else if (next_head.x >= next_tail.x + 1) && (next_head.y >= next_tail.y + 1) {
                 next_tail.x += 1;
                 next_tail.y += 1;
             }
         }
     }
 
-    (next_head, next_tail)
+    next_tail
 }
 
 pub fn execute() {
     println!("=== puzzle 9 ===");
 
-    let test_positions = run_simulation("./data/input09test.txt");
+    let test_positions = run_simulation("./data/input09test1.txt", 2);
     assert_eq!(13, test_positions.len());
 
-    let positions = run_simulation("./data/input09.txt");
+    let positions = run_simulation("./data/input09.txt", 2);
     println!("positions={}", positions.len());
+
+    let test_positions2 = run_simulation("./data/input09test1.txt", 10);
+    assert_eq!(1, test_positions2.len());
+
+    let test_positions3 = run_simulation("./data/input09test2.txt", 10);
+    assert_eq!(36, test_positions3.len());
+
+    let positions2 = run_simulation("./data/input09.txt", 10);
+    println!("positions={}", positions2.len());
 
     println!();
 }
