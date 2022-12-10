@@ -8,6 +8,7 @@ mod puzzle06;
 mod puzzle07;
 mod puzzle08;
 mod puzzle09;
+mod puzzle10;
 
 fn main() {
    puzzle01::execute();
@@ -19,4 +20,5 @@ fn main() {
    puzzle07::execute();
    puzzle08::execute();
    puzzle09::execute();
+   puzzle10::execute();
 }
