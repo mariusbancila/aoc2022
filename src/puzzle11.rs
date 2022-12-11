@@ -2,46 +2,46 @@ use crate::utils;
 use std::{path::Path, collections::VecDeque};
 use std::fmt::{self};
 trait Computation {
-    fn evaluate(&self, old: u32) -> u32;
+    fn evaluate(&self, old: u64) -> u64;
 }
 
 struct OldTimesOld;
 struct OldPlusOld;
 struct OldTimesValue {
-    value : u32
+    value : u64
 }
 struct OldPlusValue {
-    value : u32
+    value : u64
 }
 
 impl Computation for OldTimesOld {
-    fn evaluate(&self, old: u32) -> u32 {
+    fn evaluate(&self, old: u64) -> u64 {
         old * old
     }
 }
 
 impl Computation for OldPlusOld {
-    fn evaluate(&self, old: u32) -> u32 {
+    fn evaluate(&self, old: u64) -> u64 {
         old + old
     }
 }
 
 impl Computation for OldTimesValue {
-    fn evaluate(&self, old: u32) -> u32 {
+    fn evaluate(&self, old: u64) -> u64 {
         old * self.value
     }
 }
 
 impl Computation for OldPlusValue {
-    fn evaluate(&self, old: u32) -> u32 {
+    fn evaluate(&self, old: u64) -> u64 {
         old + self.value
     }
 }
 
 struct Monkey {
-    items : VecDeque<u32>,
+    items : VecDeque<u64>,
     computation : Box<dyn Computation>,
-    divisor : u32,
+    divisor : u64,
     next_monkey_if_true : usize,
     next_monkey_if_false : usize
 }
@@ -74,11 +74,11 @@ impl fmt::Display for Monkey {
 }
 
 impl Monkey {
-    fn new(levels : VecDeque<u32>, c : Box<dyn Computation>, div : u32, ntrue : usize, nfalse : usize) -> Monkey {
+    fn new(levels : VecDeque<u64>, c : Box<dyn Computation>, div : u64, ntrue : usize, nfalse : usize) -> Monkey {
         Monkey { items: levels, computation: c, divisor: div, next_monkey_if_true: ntrue, next_monkey_if_false: nfalse }
     }
 
-    fn push(&mut self, item : u32) {
+    fn push(&mut self, item : u64) {
         self.items.push_back(item);
     }
 
@@ -95,7 +95,7 @@ fn test_computations() {
         Box::new(OldPlusValue{value : 10})
     ];
 
-    let expected : Vec<u32> = vec![9, 6, 30, 13];
+    let expected : Vec<u64> = vec![9, 6, 30, 13];
 
     for i in 0..computations.len() {
         assert_eq!(expected[i], computations[i].evaluate(3));
@@ -118,11 +118,11 @@ where P : AsRef<Path> {
             }
 
             //  Starting items: 79, 98
-            let mut items : VecDeque<u32> = VecDeque::new();
+            let mut items : VecDeque<u64> = VecDeque::new();
             if let Ok(line2) = &all_lines[i*7+1] {
                 let parts : VecDeque<&str> = line2[18..line2.len()].split(", ").collect();
                 for p in parts {
-                    items.push_back(p.parse::<u32>().unwrap());
+                    items.push_back(p.parse::<u64>().unwrap());
                 }
             }
 
@@ -140,11 +140,11 @@ where P : AsRef<Path> {
                     computation = Some(Box::new(OldPlusOld));
                 }
                 else if operation.starts_with("new = old * ") {
-                    let v = line3[25..line3.len()].parse::<u32>().unwrap();
+                    let v = line3[25..line3.len()].parse::<u64>().unwrap();
                     computation = Some(Box::new(OldTimesValue{value: v}));
                 }
                 else if operation.starts_with("new = old + ") {
-                    let v = line3[25..line3.len()].parse::<u32>().unwrap();
+                    let v = line3[25..line3.len()].parse::<u64>().unwrap();
                     computation = Some(Box::new(OldPlusValue{value: v}));
                 }
                 else {
@@ -153,9 +153,9 @@ where P : AsRef<Path> {
             }
 
             //  Test: divisible by 23
-            let mut divisor : u32 = 0;
+            let mut divisor : u64 = 0;
             if let Ok(line4) = &all_lines[i*7+3] {
-                divisor = line4[21..line4.len()].parse::<u32>().unwrap();
+                divisor = line4[21..line4.len()].parse::<u64>().unwrap();
             }
 
             //    If true: throw to monkey 2
@@ -177,8 +177,8 @@ where P : AsRef<Path> {
     monkeys
 }
 
-fn compute_monkey_business(monkeys: &mut Vec<Monkey>, rounds : i32) -> u32 {
-    let mut inspections : Vec<u32> = Vec::new();
+fn compute_monkey_business(monkeys: &mut Vec<Monkey>, rounds : i32, divide : bool, val : u64) -> u64 {
+    let mut inspections : Vec<u64> = Vec::new();
     inspections.resize(monkeys.len(), 0);
 
     for _ in 0..rounds {
@@ -188,7 +188,7 @@ fn compute_monkey_business(monkeys: &mut Vec<Monkey>, rounds : i32) -> u32 {
 
                 let old_level = monkeys[i].items[level_index];
                 let eval_level = monkeys[i].computation.evaluate(old_level);                
-                let new_level = eval_level / 3;
+                let new_level = if divide {eval_level / val} else {eval_level % val};
                 if new_level % monkeys[i].divisor == 0 {
                     let index = monkeys[i].next_monkey_if_true;
                     monkeys[index].push(new_level);
@@ -208,20 +208,36 @@ fn compute_monkey_business(monkeys: &mut Vec<Monkey>, rounds : i32) -> u32 {
     inspections[0] * inspections[1]
 }
 
+fn compute_common_divisor(monkeys: &Vec<Monkey>) -> u64 {
+    let mut divisor = 1;
+
+    for m in monkeys {
+        divisor *= m.divisor;
+    }
+
+    divisor
+}
+
 pub fn execute() {
     println!("=== puzzle 11 ===");
 
     test_computations();
 
     let mut test_monkeys = parse_monkeys("./data/input11test.txt");
-    assert_eq!(10605, compute_monkey_business(&mut test_monkeys, 20));
+    assert_eq!(10605, compute_monkey_business(&mut test_monkeys, 20, true, 3));
 
     let mut monkeys = parse_monkeys("./data/input11.txt");
-    let mb = compute_monkey_business(&mut monkeys, 20);
+    let mb = compute_monkey_business(&mut monkeys, 20, true, 3);
     println!("monkey_business={}", mb);
 
-    //let mut test_monkeys2 = parse_monkeys("./data/input11test.txt");
-    //assert_eq!(2713310158, compute_monkey_business(&mut test_monkeys2, 10000, false));
+    let mut test_monkeys2 = parse_monkeys("./data/input11test.txt");
+    let test_lcm = compute_common_divisor(&test_monkeys2);
+    assert_eq!(2713310158, compute_monkey_business(&mut test_monkeys2, 10000, false, test_lcm));
+
+    let mut monkeys2 = parse_monkeys("./data/input11.txt");
+    let lcm = compute_common_divisor(&monkeys2);
+    let mb = compute_monkey_business(&mut monkeys2, 10000, false, lcm);
+    println!("monkey_business2={}", mb);
 
     println!();
 }
