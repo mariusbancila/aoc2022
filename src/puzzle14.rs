@@ -1,51 +1,13 @@
-use crate::utils::{self, Point2D};
-use std::{path::Path, collections::HashMap};
+use crate::utils::{self};
+use crate::algebra::{Point2D, SparseMatrix};
+use std::{path::Path};
 
 const ROCK : char = '#';
-const AIR : char = '.';
 const SAND : char = 'o';
 
-#[derive(Clone)]
-struct Matrix {
-    points : HashMap<utils::Point2D, char>,
-    left_most  : i32,
-    right_most : i32,
-    lowest_level : i32
-}
+type Matrix = SparseMatrix<char>;
 
-impl Matrix {
-    fn new() -> Matrix {
-        Matrix {points : HashMap::new(), left_most : i32::MAX, right_most : 0, lowest_level : 0}
-    }
-
-    fn element_at(&self, x: i32, y : i32) -> char {
-        let pt = Point2D::new(x, y);
-
-        if self.points.contains_key(&pt) {
-            if let Some(c) = self.points.get(&pt) {
-                return *c;
-            }
-        }
-
-        AIR
-    }
-
-    fn insert(&mut self, x : i32, y: i32, value : char) {
-        let pt = Point2D::new(x, y);
-
-        if self.points.contains_key(&pt) {
-            if let Some(c) = self.points.get(&pt) {
-                if *c != value {
-                    panic!("Key already exists!");
-                }
-            }
-        }
-
-        self.points.insert(pt, value);
-    }
-}
-
-fn parse_matrix<P>(filename : P) -> Matrix 
+fn parse_matrix<P>(filename : P) -> Matrix
 where P : AsRef<Path> {
     let mut matrix = Matrix::new();
 
@@ -96,11 +58,11 @@ where P : AsRef<Path> {
                         }
                     }
                     
-                    if start.y > matrix.lowest_level {
-                        matrix.lowest_level = start.y;
+                    if start.y > matrix.bottom_most {
+                        matrix.bottom_most = start.y;
                     }
-                    if end.y > matrix.lowest_level {
-                        matrix.lowest_level = end.y;
+                    if end.y > matrix.bottom_most {
+                        matrix.bottom_most = end.y;
                     }
                     if start.x < matrix.left_most {
                         matrix.left_most = start.x;
@@ -129,17 +91,17 @@ fn find_units_of_sand(matrix : &mut Matrix) -> i32 {
         let mut x = 500;
         let mut y = 0;
 
-        while y < matrix.lowest_level {
-            if matrix.element_at(x, y+1) == AIR {
+        while y < matrix.bottom_most {
+            if let None = matrix.element_at(x, y+1) {
                 y += 1;
                 continue;
             }
-            if matrix.element_at(x - 1, y + 1) == AIR {
+            if let None = matrix.element_at(x - 1, y + 1) {
                 y += 1;
                 x -= 1;
                 continue;
             }
-            if matrix.element_at(x + 1, y + 1) == AIR {
+            if let None = matrix.element_at(x + 1, y + 1) {
                 y += 1;
                 x += 1;
                 continue;
@@ -148,11 +110,13 @@ fn find_units_of_sand(matrix : &mut Matrix) -> i32 {
             break;
         }
 
-        if y == matrix.lowest_level {
+        if y == matrix.bottom_most {
             break;
         }
 
-        matrix.insert(x, y, SAND);
+        if !matrix.try_insert(x, y, SAND) {
+            panic!("Cannot insert unit!");
+        }
         count += 1;
     }    
 
@@ -166,17 +130,17 @@ fn find_units_of_sand2(matrix : &mut Matrix) -> i32 {
         let mut x = 500;
         let mut y = 0;
 
-        while y < matrix.lowest_level+1 {
-            if matrix.element_at(x, y+1) == AIR {
+        while y < matrix.bottom_most+1 {
+            if let None = matrix.element_at(x, y+1) {
                 y += 1;
                 continue;
             }
-            if matrix.element_at(x - 1, y + 1) == AIR {
+            if let None = matrix.element_at(x - 1, y + 1) {
                 y += 1;
                 x -= 1;
                 continue;
             }
-            if matrix.element_at(x + 1, y + 1) == AIR {
+            if let None = matrix.element_at(x + 1, y + 1) {
                 y += 1;
                 x += 1;
                 continue;
@@ -189,7 +153,9 @@ fn find_units_of_sand2(matrix : &mut Matrix) -> i32 {
             break;
         }
 
-        matrix.insert(x, y, SAND);
+        if !matrix.try_insert(x, y, SAND) {
+            panic!("Cannot insert unit!");
+        }
         count += 1;
     }    
 
