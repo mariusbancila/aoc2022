@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, cmp::Eq, collections::HashMap};
 
-#[derive(Debug, Eq, Clone, Hash)]
+#[derive(Debug, Eq, Clone, Hash, Copy)]
 pub struct Point2D {
     pub x : i32,
     pub y : i32
