@@ -1,6 +1,6 @@
 use regex::Regex;
 use crate::{utils::{self}, algebra::{SparseMatrix, Point2D}};
-use std::{path::Path, collections::HashMap};
+use std::{path::Path, collections::HashMap, cmp::Ordering};
 
 const SENSOR : char = 'S';
 const BEACON : char = 'B';
@@ -69,13 +69,13 @@ where P : AsRef<Path> {
     (matrix, snb)
 }
 
-fn manchester_distance(p1 : &Point2D, p2 : &Point2D) -> i32 {
+fn manhattan_distance(p1 : &Point2D, p2 : &Point2D) -> i32 {
     i32::abs(p1.x - p2.x) + i32::abs(p1.y - p2.y)
 }
 
 fn find_impossible_positions(matrix : &mut Matrix, snb : &SensorsAndBeacons, line : i32) -> usize {
     for (sensor, beacon) in &*snb {
-        let mdist = manchester_distance(&sensor, &beacon);
+        let mdist = manhattan_distance(&sensor, &beacon);
 
         for dy in 0..=mdist {
             let y = mdist - dy;
@@ -99,7 +99,7 @@ fn find_impossible_positions(matrix : &mut Matrix, snb : &SensorsAndBeacons, lin
 
 fn find_impossible_positions_smart(matrix : &mut Matrix, snb : &SensorsAndBeacons, line : i32) -> usize {
     for (sensor, beacon) in &*snb {
-        let mdist = manchester_distance(&sensor, &beacon);
+        let mdist = manhattan_distance(&sensor, &beacon);
 
         if sensor.y - mdist <= line && line <= sensor.y + mdist {
             if line <= sensor.y {
@@ -125,121 +125,92 @@ fn find_impossible_positions_smart(matrix : &mut Matrix, snb : &SensorsAndBeacon
     matrix.points.iter().filter(|&(k,v)|k.y == line && *v == IMPOSIBLE_POSITION).count()
 }
 
-struct L1BallRegion {
-    top : Point2D,
-    bottom : Point2D,
-    left : Point2D,
-    right : Point2D
+struct Sensor {
+    position : Point2D,
+    range : i32
 }
 
-#[derive(Copy, Clone)]
-struct Line {
-    from : Point2D,
-    to   : Point2D
+fn sign(value : i32) -> i32 {
+    if value < 0 {-1} else {1}
 }
 
-impl Line {
-    fn new(f : &Point2D, t : &Point2D) -> Line {
-        Line {from : *f, to : *t}
-    }
-}
+fn find_tunning_frequency(snb : &SensorsAndBeacons) -> i64 {
+    /*
+    Look at each pair of sensors and check if their covering range intersects.
+    If there is exactly one line between them (their Manhattan's distance is equal to sum of their coverage area + 2)
+    then check that line to see if any other scanner is covering it.
+    If there is a point along that line not covered by any other sensor, that's the missing beacon!
 
-fn make_l1ball_region(sensor: &Point2D, beacon : &Point2D) -> L1BallRegion {
-    let mdist = manchester_distance(&sensor, &beacon) + 1;
+    ............
+    ....1.......
+    ...111......
+    ..11111.....
+    .111S111....
+    ..11111@2...
+    ...111@222..
+    ....1@22S22.
+    .......222..
+    ........2...
+    ............
 
-    L1BallRegion {
-        top : Point2D::new(sensor.x, sensor.y - mdist),
-        bottom : Point2D::new(sensor.x, sensor.y + mdist),
-        left : Point2D::new(sensor.x - mdist, sensor.y),
-        right : Point2D::new(sensor.x + mdist, sensor.y),
-    }
-}
+    1 - the coverage area of sensor 1.
+    2 - the coverage area of sensor 2
+    @ - point on a line between two neighbors
 
-fn counter_clock_wise(a : &Point2D, b: &Point2D, c: &Point2D) -> bool {
-    (c.y-a.y)*(b.x-a.x) > (b.y-a.y)*(c.x-a.x)
-}
+    mdist(sensor1, beacon1) = 3
+    mdist(sensor2, beacon2) = 2
+    mdist(sensor1, sensor2) = 7
 
-fn are_intersecting(l1 : &Line, l2 : &Line) -> bool {
-    counter_clock_wise(&l1.from, &l2.from, &l2.to) != counter_clock_wise(&l1.to, &l2.from, &l2.to) &&
-    counter_clock_wise(&l1.from, &l1.to, &l2.from) != counter_clock_wise(&l1.from, &l1.to, &l2.to)
-}
+    Condition:
+    mdist(sensor1, beacon1) + mdist(sensor2, beacon2) + 2 = mdist(sensor1, sensor2)
+     */
 
-fn intersection(l1 : &Line, l2 : &Line) -> Option<Point2D> {
-    let a1 = l1.to.y - l1.from.y;
-    let b1 = l1.from.x - l1.to.x;
-    let c1 = a1 * l1.from.x + b1 * l1.from.y;
+    let mut sensors : Vec<Sensor> = Vec::new();
 
-    let a2 = l2.to.y - l2.from.y;
-    let b2 = l2.from.x - l2.to.x;
-    let c2 = a2 * l2.from.x + b2 * l2.from.y;
-
-    let d = a1*b2 - a2*b1;
-
-    if d != 0 {
-        let x = (b2*c1 - b1*c2)/d;
-        let y = (a1*c2 - a2*c1)/d;
-
-        return Some(Point2D::new(x, y));
+    for (sensor, beacon) in &*snb {
+        sensors.push(Sensor{position : *sensor, range : manhattan_distance(sensor, beacon)});
     }
 
-    None
-}
+    let mut dx = 0;
+    let mut dy = 0;
 
-fn find_tunning_frequency(snb : &SensorsAndBeacons, maxline : i32) -> i64 {
-    let mut regions : Vec<L1BallRegion> = Vec::new();
+    'outer: 
+    for i in 0..sensors.len() {
+        for j in i+1..sensors.len() {
+            let mdist = manhattan_distance(&sensors[i].position, &sensors[j].position);
+            if mdist == sensors[i].range + sensors[j].range + 2 {
+                let x1 = sensors[i].position.x + sign(sensors[j].position.x - sensors[i].position.x) * (sensors[i].range+1);
+                let y1 = sensors[i].position.y;
 
-    // STEP 1: determine the l1-ball regions of exclusions for each sensor
-    
-    // Example : l1-ball exlusion region for a sensor-beacon with Manhatan distance 4
-    //           # - position where a beacon cannot be located
-    //           . - empty space
-    //           @ - position where a beacon can be located (the outer margin of the l1-ball of each sensor)
+                let x2 = sensors[i].position.x;
+                let y2 = sensors[i].position.y + sign(sensors[j].position.y - sensors[i].position.y) * (sensors[i].range+1);
 
-    // .....@.....      .....@.....
-    // ....@#@....      ....@.@....
-    // ...@###@...      ...@...@...
-    // ..@####B@..      ..@....B@..
-    // .@#######@.      .@.......@.
-    // @####S####@  =>  @....S....@
-    // .@#######@.      .@.......@.
-    // ..@#####@..      ..@.....@..
-    // ...@###@...      ...@...@...
-    // ....@#@....      ....@.@....
-    // .....@.....      .....@.....
+                // check every point between the coverage ranges
+                dx = x1;
+                dy = y1;
+                while dx != x2 && dy != y2 {
+                    // check if the point is out of scan of any other scanner
 
-    for (sensor, beacon) in snb {
-        regions.push(make_l1ball_region(sensor, beacon));
+                    let mut good = true;
+                    for k in 0..sensors.len() {
+                        if manhattan_distance(&Point2D::new(dx, dy), &sensors[k].position) <= sensors[k].range {
+                            good = false;
+                            break;
+                        }
+                    }
+
+                    if good {
+                        break 'outer;
+                    }
+
+                    dx += sign(x2 - x1);
+                    dy += sign(y2 - y1);
+                }
+            }
+        }
     }
 
-    // STEP 2: determine the intersection of each pair of l1-ball regions
-    //         build a list of line segments defining the intersection polygon(s)
-
-    // Example : intersections of two l1-ball regions
-    //           @ - point on margin of the region
-    //           * - point on the margin that is included in another exlusion region and therefore of no intereset
-
-    // .....@.........
-    // ....@.@...@....
-    // ...@...@.@.@...
-    // ..@....B@...@..
-    // .@.....*.*..B@.
-    // @....S*...S...@
-    // .@.....*.*...@.
-    // ..@.....@...@..
-    // ...@...@.@.@...
-    // ....@.@...@....
-    // .....@.........
-
-    let mut segments : Vec<Line> = Vec::new();
-
-    for i in 0..regions.len()-1 {
-        let l1 = &regions[i];
-        let l2 = &regions[i+1];
-    }
-
-    // STEP 3: check the interction polygon against the search area
-
-    0
+    dx as i64 * 4000000 + dy as i64
 }
 
 pub fn execute() {
@@ -256,8 +227,11 @@ pub fn execute() {
     let count = find_impossible_positions_smart(&mut matrix.clone(), &snb, 2000000);
     println!("count={}", count);
 
-    //let test_freq = find_tunning_frequency(&test_snb, 20);
-    //assert_eq!(56000011, test_freq);
+    let test_freq = find_tunning_frequency(&test_snb);
+    assert_eq!(56000011, test_freq);
+
+    let freq = find_tunning_frequency(&snb);
+    println!("freq={}", freq);
 
     println!();
 }
