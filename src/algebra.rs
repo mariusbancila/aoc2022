@@ -56,6 +56,7 @@ pub struct SparseMatrix<T> {
     pub bottom_most : i32,
 }
 
+#[allow(unused)]
 impl<T> SparseMatrix<T> 
 where T : PartialEq + Copy {
     pub fn new() -> SparseMatrix<T> {
@@ -99,5 +100,40 @@ where T : PartialEq + Copy {
 
         self.points.insert(pt, value);        
         true
+    }
+}
+
+#[derive(Clone)]
+pub struct Matrix<T> {
+    pub rows : usize,
+    pub cols : usize,
+    pub data : Vec<T>
+}
+
+#[allow(unused)]
+impl<T> Matrix<T> 
+where T : Copy{
+    pub fn new(r: usize, c : usize) -> Matrix<T> {
+        Matrix { rows: r, cols: c, data: Vec::new() }
+    }
+
+    pub fn new_from(r: usize, c : usize, d: Vec<T>) -> Matrix<T> {
+        Matrix { rows: r, cols: c, data: d }
+    }
+
+    pub fn element_at(&self, r : usize, c : usize) -> Option<T> {
+        if r < self.rows && c < self.cols {
+            return Some(self.data[r * self.cols + c]);
+        }
+        None
+    }
+
+    pub fn set_at(&mut self, r : usize, c : usize, value : T) -> bool {
+        if r < self.rows && c < self.cols {
+            self.data[r * self.cols + c] = value;
+            return true;
+        }
+
+        false
     }
 }
