@@ -1,6 +1,6 @@
 use regex::Regex;
 use crate::{utils::{self}, algebra::{SparseMatrix, Point2D}};
-use std::{path::Path, collections::HashMap, cmp::Ordering};
+use std::{path::Path, collections::HashMap};
 
 const SENSOR : char = 'S';
 const BEACON : char = 'B';

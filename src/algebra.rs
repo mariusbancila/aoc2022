@@ -137,3 +137,33 @@ where T : Copy{
         false
     }
 }
+
+pub struct Matrix3D<T> {
+    pub size_x : usize,
+    pub size_y : usize,
+    pub size_z : usize,
+    pub data : Vec<Vec<Vec<T>>>
+}
+
+impl<T> Matrix3D<T> 
+where T: Clone + Copy{
+    pub fn new(sx : usize, sy : usize, sz : usize, value : T) -> Matrix3D<T> {
+        Matrix3D { size_x: sx, size_y: sy, size_z: sz, data: vec![vec![vec![value; sz]; sy]; sz] }
+    }
+
+    pub fn element_at(&self, x : usize, y : usize, z : usize) -> Option<T> {
+        if x < self.size_x && y < self.size_y && z < self.size_z {
+            return Some(self.data[x][y][z]);
+        }
+        println!("{},{},{}", x,y,z);
+        None
+    }
+
+    pub fn set_at(&mut self, x : usize, y : usize, z : usize, value : T) -> bool {
+        if x < self.size_x && y < self.size_y && z < self.size_z {
+            self.data[x][y][z] = value;
+            return true;
+        }
+        false
+    }
+}
