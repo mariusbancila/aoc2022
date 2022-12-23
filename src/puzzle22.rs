@@ -42,7 +42,7 @@ pub fn execute() {
 
 fn read_grid<P>(filename: P, max_len : usize) -> (Grid, MoveInstructions)
 where P : AsRef<Path> {
-    let mut cols = max_len;
+    let cols = max_len;
     let mut rows = 0;
     let mut data : Vec<char> = Vec::new();
     let mut instructions = MoveInstructions::new();

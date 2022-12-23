@@ -31,6 +31,12 @@ pub fn execute() {
     let tiles = simulate(&grid, 10);
     println!("tiles={}", tiles);
 
+    let test_rounds = find_stable_stage(&test_grid);
+    assert_eq!(20, test_rounds);
+
+    let rounds = find_stable_stage(&grid);
+    println!("rounds={}", rounds);
+
     println!();
 }
 
@@ -185,4 +191,72 @@ fn simulate(grid: &Grid, rounds : usize) -> u32 {
     }
 
     u32::try_from(upperx - lowerx + 1).unwrap() * u32::try_from(uppery - lowery + 1).unwrap() - count
+}
+
+fn find_stable_stage(grid: &Grid) -> usize {
+    let mut crt_grid = grid.clone();
+    let mut round = 0;
+
+    loop {
+        // part 1: make proposals
+        let mut proposals_count = Proposals::new();
+        let mut elf_proposals : HashMap<u32, Position> = HashMap::new();
+
+        for elf in &crt_grid.points {
+            if has_neighbors(&crt_grid, *elf.0) {
+                if let Some(proposed_pos) = find_next_position(&crt_grid, *elf.0, round) {
+                    // can make a proposal
+
+                    if let Some(v) = proposals_count.get_mut(&proposed_pos) {
+                        *v += 1;
+                    }
+                    else {
+                        proposals_count.insert(proposed_pos, 1);
+                    }
+
+                    // map elf id to proposed position
+                    elf_proposals.insert(*elf.1, proposed_pos);
+                }
+            }
+        }
+
+        // part 2: move
+        let mut next_grid : Grid = Grid::new();
+
+        let mut changed = false;
+        // check each elf
+        for elf in &crt_grid.points {
+            // elf.0 = position
+            // elf.1 = id
+
+            let mut moved = false;
+            // if the elf made a proposal
+            if let Some(elf_prop) = elf_proposals.get(&elf.1) {
+                // count the proposals for that point
+                if let Some(v) = proposals_count.get(&elf_prop) {
+                    // if there is only one proposal then move the elf
+                    if *v == 1 {
+                        next_grid.insert(elf_prop.x, elf_prop.y, *elf.1);
+                        moved = true;
+                        changed = true;
+                    }
+                }
+            }
+
+            if !moved {
+                next_grid.insert(elf.0.x, elf.0.y, *elf.1);
+            }
+        }
+
+        // swap grids
+        crt_grid = next_grid;
+
+        round += 1;
+
+        if !changed {
+            break;
+        }
+    }
+
+    round
 }
