@@ -1,4 +1,5 @@
 use std::{cmp::Ordering, cmp::Eq, collections::HashMap};
+use std::hash::Hash;
 
 #[derive(Debug, Eq, Clone, Hash, Copy)]
 pub struct Point2D {
@@ -47,6 +48,52 @@ impl PartialEq for Point2D {
 }
 
 
+#[derive(Debug, Eq, Clone, Hash, Copy)]
+pub struct Point2DAlt {
+    pub x : i32,
+    pub y : i32
+}
+
+impl Point2DAlt {
+    pub fn new(x : i32, y : i32) -> Point2DAlt {
+        Point2DAlt { x, y }
+    }
+}
+
+impl PartialOrd for Point2DAlt {
+    fn partial_cmp(&self, other : &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Point2DAlt {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if self.y < other.y {
+            Ordering::Less
+        }
+        else if self.y == other.y {
+            if self.x < other.x {
+                Ordering::Less
+            }
+            else if self.x == other.x {
+                Ordering::Equal
+            }
+            else {
+                Ordering::Greater
+            }
+        }
+        else {
+            Ordering::Greater
+        }
+    }
+}
+
+impl PartialEq for Point2DAlt {
+    fn eq(&self, other: &Self) -> bool {
+        self.x == other.x && self.y == other.y
+    }
+}
+
 #[derive(Clone)]
 pub struct SparseMatrix<T> {
     pub points : HashMap<Point2D, T>,
@@ -81,6 +128,7 @@ where T : PartialEq + Copy {
         if self.points.contains_key(&pt) {
             if let Some(c) = self.points.get_mut(&pt) {
                 *c = value;
+                return;
             }
         }
 
@@ -99,6 +147,57 @@ where T : PartialEq + Copy {
         }
 
         self.points.insert(pt, value);        
+        true
+    }
+}
+
+#[derive(Clone)]
+pub struct SparseMatrixAlt<K, T> {
+    pub points : HashMap<K, T>,
+    pub left_most  : i32,
+    pub right_most : i32,
+    pub top_most : i32,
+    pub bottom_most : i32,
+}
+
+#[allow(unused)]
+impl<K, T> SparseMatrixAlt<K, T> 
+where T : PartialEq + Copy, K : Copy + Eq + Hash {
+    pub fn new() -> SparseMatrixAlt<K, T> {
+        SparseMatrixAlt {points : HashMap::new(), left_most : i32::MAX, right_most : 0, top_most : i32::MAX, bottom_most : 0}
+    }
+
+    pub fn element_at(&self, key : &K) -> Option<T> {
+        if self.points.contains_key(key) {
+            if let Some(c) = self.points.get(key) {
+                return Some(*c);
+            }
+        }
+
+        None
+    }
+
+    pub fn insert(&mut self, key : &K, value : T) {
+        if self.points.contains_key(key) {
+            if let Some(c) = self.points.get_mut(key) {
+                *c = value;
+                return;
+            }
+        }
+
+        self.points.insert(*key, value);
+    }
+
+    pub fn try_insert(&mut self, key : &K, value : T) -> bool {
+        if self.points.contains_key(key) {
+            if let Some(c) = self.points.get(key) {
+                if *c != value {
+                    return false;
+                }
+            }
+        }
+
+        self.points.insert(*key, value);
         true
     }
 }
