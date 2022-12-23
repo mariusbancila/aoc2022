@@ -1,4 +1,4 @@
-use crate::algebra::{self};
+use crate::algebra::{self, SparseMatrix};
 use crate::utils::read_lines;
 use std::{path::Path, collections::HashMap};
 
@@ -16,47 +16,9 @@ const DYMOV : [i32; 4] = [-1, 1, 0, 0];
 
 type Elf = u32;
 
-type Position = algebra::Point2DAlt;
+type Position = algebra::Point2D;
 type Proposals = HashMap<Position, u16>;
-
-#[derive(Clone)]
-struct Grid {
-    points : Vec<(Position, Elf)>
-}
-
-impl Grid {
-    fn new() -> Grid {
-        Grid {points : Vec::new()}
-    }
-
-    fn from(grid : &Grid) -> Grid {
-        Grid {points : grid.points.clone()}
-    }
-
-    pub fn element_at(&self, x: i32, y : i32) -> Option<Elf> {
-        let pt = Position::new(x, y);
-
-        for e in &self.points {
-            if e.0 == pt {
-                return Some(e.1);
-            }
-        }
-
-        None
-    }
-
-    pub fn insert(&mut self, x : i32, y: i32, value : Elf) {
-        let pt = Position::new(x, y);
-
-        for e in &self.points {
-            if e.0 == pt {
-                return;
-            }
-        }
-
-        self.points.push((pt, value));
-    }
-}
+type Grid = SparseMatrix<Elf>;
 
 pub fn execute() {
     println!("=== puzzle 23 ===");
@@ -136,7 +98,7 @@ fn find_next_position(grid: &Grid, position : Position, round : usize) -> Option
 }
 
 fn simulate(grid: &Grid, rounds : usize) -> u32 {
-    let mut crt_grid = Grid::from(grid);
+    let mut crt_grid = grid.clone();
 
     for round in 0..rounds {
         // part 1: make proposals
@@ -144,8 +106,8 @@ fn simulate(grid: &Grid, rounds : usize) -> u32 {
         let mut elf_proposals : HashMap<u32, Position> = HashMap::new();
 
         for elf in &crt_grid.points {
-            if has_neighbors(&crt_grid, elf.0) {
-                if let Some(proposed_pos) = find_next_position(&crt_grid, elf.0, round) {
+            if has_neighbors(&crt_grid, *elf.0) {
+                if let Some(proposed_pos) = find_next_position(&crt_grid, *elf.0, round) {
                     // can make a proposal
 
                     if let Some(v) = proposals_count.get_mut(&proposed_pos) {
@@ -156,7 +118,7 @@ fn simulate(grid: &Grid, rounds : usize) -> u32 {
                     }
 
                     // map elf id to proposed position
-                    elf_proposals.insert(elf.1, proposed_pos);
+                    elf_proposals.insert(*elf.1, proposed_pos);
                 }
             }
         }
@@ -176,14 +138,14 @@ fn simulate(grid: &Grid, rounds : usize) -> u32 {
                 if let Some(v) = proposals_count.get(&elf_prop) {
                     // if there is only one proposal then move the elf
                     if *v == 1 {
-                        next_grid.insert(elf_prop.x, elf_prop.y, elf.1);
+                        next_grid.insert(elf_prop.x, elf_prop.y, *elf.1);
                         moved = true;
                     }
                 }
             }
 
             if !moved {
-                next_grid.insert(elf.0.x, elf.0.y, elf.1);
+                next_grid.insert(elf.0.x, elf.0.y, *elf.1);
             }
         }
 

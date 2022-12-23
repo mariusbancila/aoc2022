@@ -110,6 +110,10 @@ where T : PartialEq + Copy {
         SparseMatrix {points : HashMap::new(), left_most : i32::MAX, right_most : 0, top_most : i32::MAX, bottom_most : 0}
     }
 
+    pub fn from(p : &HashMap<Point2D, T>) -> SparseMatrix<T> {
+        SparseMatrix {points : p.clone(), left_most : i32::MAX, right_most : 0, top_most : i32::MAX, bottom_most : 0}
+    }
+
     pub fn element_at(&self, x: i32, y : i32) -> Option<T> {
         let pt = Point2D::new(x, y);
 
