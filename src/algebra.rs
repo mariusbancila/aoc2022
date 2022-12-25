@@ -55,6 +55,7 @@ pub struct Point2DAlt {
 }
 
 impl Point2DAlt {
+    #[allow(unused)]
     pub fn new(x : i32, y : i32) -> Point2DAlt {
         Point2DAlt { x, y }
     }

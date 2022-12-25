@@ -22,6 +22,7 @@ mod puzzle20;
 mod puzzle21;
 mod puzzle22;
 mod puzzle23;
+mod puzzle25;
 
 fn main() {
    puzzle01::execute();
@@ -45,4 +46,5 @@ fn main() {
    puzzle21::execute();
    puzzle22::execute();
    puzzle23::execute();
+   puzzle25::execute();
 }
