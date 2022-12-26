@@ -1,12 +1,28 @@
 use std::{cmp::Ordering, cmp::Eq, collections::HashMap};
 use std::hash::Hash;
 
+#[allow(unused)]
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Clone, Hash, Copy)]
+pub struct Position2D<T> {
+    pub x : T,
+    pub y : T
+}
+
+#[allow(unused)]
+impl<T> Position2D<T> {
+    pub fn new(x : T, y : T) -> Position2D<T> {
+        Position2D { x, y }
+    }
+}
+
+#[allow(unused)]
 #[derive(Debug, Eq, Clone, Hash, Copy)]
 pub struct Point2D {
     pub x : i32,
     pub y : i32
 }
 
+#[allow(unused)]
 impl Point2D {
     pub fn new(x : i32, y : i32) -> Point2D {
         Point2D { x, y }
@@ -47,7 +63,7 @@ impl PartialEq for Point2D {
     }
 }
 
-
+#[allow(unused)]
 #[derive(Debug, Eq, Clone, Hash, Copy)]
 pub struct Point2DAlt {
     pub x : i32,
@@ -95,6 +111,7 @@ impl PartialEq for Point2DAlt {
     }
 }
 
+#[allow(unused)]
 #[derive(Clone)]
 pub struct SparseMatrix<T> {
     pub points : HashMap<Point2D, T>,
@@ -156,6 +173,7 @@ where T : PartialEq + Copy {
     }
 }
 
+#[allow(unused)]
 #[derive(Clone)]
 pub struct SparseMatrixAlt<K, T> {
     pub points : HashMap<K, T>,
@@ -207,6 +225,7 @@ where T : PartialEq + Copy, K : Copy + Eq + Hash {
     }
 }
 
+#[allow(unused)]
 #[derive(Clone)]
 pub struct Matrix<T> {
     pub rows : usize,
@@ -242,6 +261,7 @@ where T : Copy{
     }
 }
 
+#[allow(unused)]
 pub struct Matrix3D<T> {
     pub size_x : usize,
     pub size_y : usize,
@@ -249,6 +269,7 @@ pub struct Matrix3D<T> {
     pub data : Vec<Vec<Vec<T>>>
 }
 
+#[allow(unused)]
 impl<T> Matrix3D<T> 
 where T: Clone + Copy{
     pub fn new(sx : usize, sy : usize, sz : usize, value : T) -> Matrix3D<T> {

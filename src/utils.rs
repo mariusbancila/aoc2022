@@ -15,3 +15,13 @@ where P: AsRef<Path> {
     let data = fs::read_to_string(filename)?;
     Ok(data)
 }
+
+#[allow(unused)]
+pub fn as_i32(n : usize) -> i32 {
+    i32::try_from(n).unwrap()
+}
+
+#[allow(unused)]
+pub fn as_usize(n : i32) -> usize {
+    usize::try_from(n).unwrap()
+}
