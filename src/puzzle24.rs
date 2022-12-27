@@ -13,18 +13,27 @@ pub fn execute() {
     println!("=== puzzle 24 ===");
 
     let (test_map, test_begin, test_end) = read_map("./data/input24test.txt");
-    let test_dist = find_distance(&test_map, test_begin, test_end);
+    let mut test_dist = find_distance(&test_map, test_begin, test_end, 1);
     assert_eq!(18, test_dist);
 
+    test_dist = find_distance(&test_map, test_end, test_begin, test_dist);
+    test_dist = find_distance(&test_map, test_begin, test_end, test_dist);
+    assert_eq!(54, test_dist);
+
+
     let (map, begin, end) = read_map("./data/input24.txt");
-    let dist = find_distance(&map, begin, end);
+    let mut dist = find_distance(&map, begin, end, 1);
     println!("dist={}", dist);
+
+    dist = find_distance(&map, end, begin, dist);
+    dist = find_distance(&map, begin, end, dist);
+
+    println!("dist 3x={}", dist);
 
     println!();
 }
 
-fn find_distance(map : &Map, begin : (i32,i32), end: (i32, i32)) -> i32 {
-    let mut step = 0i32;
+fn find_distance(map : &Map, begin : (i32,i32), end: (i32, i32), mut step : i32) -> i32 {
     let (start_row, start_col) = begin;
     let (end_row, end_col) = end;
 
