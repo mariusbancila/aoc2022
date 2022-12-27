@@ -16,13 +16,13 @@ mod algebra;
 // mod puzzle13;
 // mod puzzle14;
 // mod puzzle15;
-// mod puzzle17;
+mod puzzle17;
 // mod puzzle18;
 // mod puzzle20;
 // mod puzzle21;
 // mod puzzle22;
 // mod puzzle23;
-mod puzzle24;
+// mod puzzle24;
 // mod puzzle25;
 
 fn main() {
@@ -41,12 +41,12 @@ fn main() {
    // puzzle13::execute();
    // puzzle14::execute();
    // puzzle15::execute();
-   // puzzle17::execute();
+   puzzle17::execute();
    // puzzle18::execute();
    // puzzle20::execute();
    // puzzle21::execute();
    // puzzle22::execute();
    // puzzle23::execute();
-   puzzle24::execute();
+   // puzzle24::execute();
    // puzzle25::execute();
 }
