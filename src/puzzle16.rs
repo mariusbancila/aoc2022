@@ -1,7 +1,7 @@
 use priority_queue::PriorityQueue;
 use regex::Regex;
-use crate::utils::{self, read_lines};
-use std::{path::Path, collections::{HashMap, HashSet}, hash::Hash, cmp::{Ordering, Reverse}};
+use crate::utils::{read_lines};
+use std::{path::Path, collections::{HashMap, HashSet}, hash::Hash, cmp::{Ordering}};
 
 // https://github.com/vss2sn/advent_of_code/blob/master/2022/cpp/day_16a.cpp
 
@@ -63,39 +63,6 @@ impl PartialEq for ReverseNumber {
     }
 }
 
-/*
-#[derive(Debug, Eq, Clone, Hash)]
-struct ValveDist {
-    name : String,
-    dist : u32
-}
-
-impl PartialEq for ValveDist {
-    fn eq(&self, other: &Self) -> bool {
-        self.name == other.name
-    }
-}
-
-impl PartialOrd for ValveDist {
-    fn partial_cmp(&self, other : &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for ValveDist {
-    fn cmp(&self, other: &Self) -> Ordering {
-        if self.dist < other.dist {
-            Ordering::Greater
-        }
-        else if self.dist == other.dist {
-            Ordering::Equal
-        }
-        else {
-            Ordering::Less
-        }
-    }
-}*/
-
 fn parse_data<P>(filename : P) -> ValveCollection 
 where P : AsRef<Path> {
     let mut valves : ValveCollection = HashMap::new();
@@ -138,7 +105,7 @@ fn find_distances_for(valve : &String, valves : &ValveCollection) -> HashMap<Str
     let mut visited : HashSet<String> = HashSet::new();
     let mut queue : PriorityQueue<String, ReverseNumber> = PriorityQueue::new();
 
-    queue.push(valve.clone(), ReverseNumber {value : 0});
+    queue.push(valve.clone(), ReverseNumber { value: 0 });
 
     while !queue.is_empty() {
         let current = queue.pop().unwrap();
@@ -151,7 +118,9 @@ fn find_distances_for(valve : &String, valves : &ValveCollection) -> HashMap<Str
 
         distances.insert((*current.0).to_string(), current.1.value);
 
-        for connection in &(valves.get_key_value(valve).unwrap().1.connections) {
+        let connections = &valves.get_key_value(&current.0).unwrap().1.connections;
+
+        for connection in connections {
             queue.push(connection.clone(), ReverseNumber { value: current.1.value + 1});
         }
     }
