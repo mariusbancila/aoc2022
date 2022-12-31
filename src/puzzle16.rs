@@ -3,8 +3,6 @@ use regex::Regex;
 use crate::utils::{read_lines};
 use std::{path::Path, collections::{HashMap, HashSet}, hash::Hash, cmp::{Ordering}};
 
-// https://github.com/vss2sn/advent_of_code/blob/master/2022/cpp/day_16a.cpp
-
 pub fn execute() {
     println!("=== puzzle 16 ===");
 
@@ -14,11 +12,15 @@ pub fn execute() {
     assert_eq!(1651, test_max_flow);
 
     let valves = parse_data("./data/input16.txt");
+    let dist = find_distances(&valves);
+    let max_flow = find_max_flow(&valves, &dist);
+    println!("max flow={}", max_flow);
 
     println!();
 }
 
 struct Valve {
+    #[allow(unused)]
     name : String,
     flow_rate : i32,
     connections : Vec<String>
@@ -91,7 +93,9 @@ where P : AsRef<Path> {
 fn find_distances(valves : &ValveCollection) -> HashMap<String, HashMap<String, i32>> {
     let mut distances : HashMap<String, HashMap<String, i32>> = HashMap::new();
 
+    // for each valve
     for (name,_) in valves {
+        // find the distances from the valve to all the other valves in the graph
         let d = find_distances_for(name, valves);
 
         distances.insert(name.clone(), d);
@@ -105,19 +109,24 @@ fn find_distances_for(valve : &String, valves : &ValveCollection) -> HashMap<Str
     let mut visited : HashSet<String> = HashSet::new();
     let mut queue : PriorityQueue<String, ReverseNumber> = PriorityQueue::new();
 
+    // add the current valve to the queue
     queue.push(valve.clone(), ReverseNumber { value: 0 });
 
+    // while there are still valves in the queue
     while !queue.is_empty() {
+        // pop the top of the queue
         let current = queue.pop().unwrap();
 
+        // if the valve was already visited then skip it
         if visited.contains(&current.0) {
             continue;
         }
 
+        // add the valve to the visited list and store the distance
         visited.insert(current.0.clone());
-
         distances.insert((*current.0).to_string(), current.1.value);
 
+        // add in the connecting valves to the queue
         let connections = &valves.get_key_value(&current.0).unwrap().1.connections;
 
         for connection in connections {
@@ -182,16 +191,16 @@ fn depth_first_search(path : &mut Vec<String>,
 }
 
 fn calc_flow(path : &Vec<String>, 
-             time : &mut i32, 
+             mut time : i32, 
              valves : &ValveCollection, 
              distances: &HashMap<String, HashMap<String, i32>>) -> i32 {
     let mut score : i32 = 0;
     for i in 0..path.len() - 1 {
         let map = distances.get_key_value(&path[i]).unwrap().1;
         let dist = map.get_key_value(&path[i+1]).unwrap().1;
-        *time = *time - dist - 1;
+        time = time - dist - 1;
 
-        score += valves.get_key_value(&path[i+1]).unwrap().1.flow_rate * (*time);
+        score += valves.get_key_value(&path[i+1]).unwrap().1.flow_rate * time;
     }
 
     score
@@ -199,11 +208,11 @@ fn calc_flow(path : &Vec<String>,
 
 fn find_max_flow(valves : &ValveCollection, distances: &HashMap<String, HashMap<String, i32>>) -> i32 {
     let mut max_flow = 0;
-    let mut time = 30;
+    let time = 30;
 
     let paths = get_all_paths(valves, "AA", 30, distances);
     for path in paths {
-        let flow = calc_flow(&path, &mut time, valves, distances);
+        let flow = calc_flow(&path, time, valves, distances);
 
         if flow > max_flow {
             max_flow = flow;
